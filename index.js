@@ -694,6 +694,123 @@ app.post('/webhook', async (req, res) => {
   }
 });
 
+
+// ============================================================
+// 📱 ENDPOINT — APP INTERLIGA (chamado pelo PWA)
+// ============================================================
+
+// Recebe solicitação de corrida vinda do app
+app.post('/nova-corrida', async (req, res) => {
+  try {
+    const { origem, destino, valor, telefone, nome } = req.body;
+    if (!origem || !destino) {
+      return res.status(400).json({ erro: 'origem e destino obrigatórios' });
+    }
+
+    // Gerar ID da corrida
+    const corridaId = 'APP' + Date.now();
+
+    // Salvar no Firebase
+    if (db) {
+      await db.collection('corridas').doc(corridaId).set({
+        id: corridaId,
+        clientePhone: telefone || 'app-user',
+        clienteNome: nome || 'Passageiro App',
+        embarque: origem,
+        destino,
+        valor: valor || '0',
+        origem: 'app',
+        status: 'aguardando',
+        criadoEm: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    }
+
+    // Buscar motorista
+    const motorista = await buscarMotorista(corridaId, null, null);
+
+    if (!motorista) {
+      return res.json({ sucesso: false, mensagem: 'Nenhum motorista disponível no momento' });
+    }
+
+    return res.json({
+      sucesso: true,
+      corridaId,
+      motorista: {
+        nome: motorista.nome,
+        veiculo: motorista.veiculo,
+        placa: motorista.placa,
+        avaliacao: motorista.avaliacao,
+      },
+      mensagem: 'Motorista encontrado!',
+    });
+  } catch (e) {
+    console.error('Erro /nova-corrida:', e);
+    res.status(500).json({ erro: 'Erro interno' });
+  }
+});
+
+// Recebe mensagem do chat do app e repassa ao motorista
+app.post('/chat', async (req, res) => {
+  try {
+    const { corridaId, mensagem, de } = req.body;
+    if (!corridaId || !mensagem) {
+      return res.status(400).json({ erro: 'corridaId e mensagem obrigatórios' });
+    }
+
+    if (db) {
+      await db.collection('chats').add({
+        corridaId,
+        de: de || 'passageiro',
+        mensagem,
+        timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      });
+    }
+
+    res.json({ sucesso: true });
+  } catch (e) {
+    res.status(500).json({ erro: 'Erro interno' });
+  }
+});
+
+// Busca mensagens do chat (polling)
+app.get('/chat/:corridaId', async (req, res) => {
+  try {
+    const { corridaId } = req.params;
+    if (!db) return res.json({ mensagens: [] });
+
+    const msgs = await db.collection('chats')
+      .where('corridaId', '==', corridaId)
+      .orderBy('timestamp', 'asc')
+      .limit(50)
+      .get();
+
+    const mensagens = msgs.docs.map(d => ({
+      de: d.data().de,
+      mensagem: d.data().mensagem,
+      timestamp: d.data().timestamp?.toDate?.() || new Date(),
+    }));
+
+    res.json({ mensagens });
+  } catch (e) {
+    res.status(500).json({ erro: 'Erro interno' });
+  }
+});
+
+// Status de uma corrida
+app.get('/corrida/:corridaId', async (req, res) => {
+  try {
+    const { corridaId } = req.params;
+    if (!db) return res.json({ status: 'aguardando' });
+
+    const doc = await db.collection('corridas').doc(corridaId).get();
+    if (!doc.exists) return res.status(404).json({ erro: 'Corrida não encontrada' });
+
+    res.json(doc.data());
+  } catch (e) {
+    res.status(500).json({ erro: 'Erro interno' });
+  }
+});
+
 // ============================================================
 // 🏥 HEALTH CHECK
 // ============================================================
