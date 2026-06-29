@@ -4,12 +4,16 @@ const express = require('express');
 const app = express();
 app.use(express.json());
 const PORT = process.env.PORT || 3000; 
+const { webcrypto } = require('crypto');
+if (!globalThis.crypto) globalThis.crypto = webcrypto;
+const express = require('express');
+const app = express();
+app.use(express.json());
+const PORT = process.env.PORT || 3000;
+
 // ── MÓDULO DE FRETE (carretas) ──
 const { handleFreteMessage, watchDisparos } = require('./frete-bot-handler');
-const admin = require('firebase-admin');
-
-let freteDb = null;
-if (process.env.FRETE_FIREBASE_KEY) {
+const admin = require('firebase-admin');if (process.env.FRETE_FIREBASE_KEY) {
   try {
     const freteApp = admin.initializeApp(
       { credential: admin.credential.cert(JSON.parse(process.env.FRETE_FIREBASE_KEY)) },
