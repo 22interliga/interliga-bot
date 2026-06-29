@@ -1,4 +1,9 @@
- express = require('express');
+const { webcrypto } = require('crypto');
+if (!globalThis.crypto) globalThis.crypto = webcrypto;
+const express = require('express');
+const app = express();
+app.use(express.json());
+const PORT = process.env.PORT || 3000; express = require('express');
 const app = express();
 app.use(express.json());
 const PORT = process.env.PORT || 3000;
