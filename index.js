@@ -3,11 +3,7 @@ if (!globalThis.crypto) globalThis.crypto = webcrypto;
 const express = require('express');
 const app = express();
 app.use(express.json());
-const PORT = process.env.PORT || 3000; express = require('express');
-const app = express();
-app.use(express.json());
-const PORT = process.env.PORT || 3000;
-
+const PORT = process.env.PORT || 3000; 
 // ── MÓDULO DE FRETE (carretas) ──
 const { handleFreteMessage, watchDisparos } = require('./frete-bot-handler');
 const admin = require('firebase-admin');
