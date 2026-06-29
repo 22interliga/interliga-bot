@@ -395,3 +395,5 @@ app.listen(PORT, () => {
   console.log(`🚀 Interliga Bot v3.0 rodando na porta ${PORT}`);
   startBaileys();
 });
+//redeploy
+
