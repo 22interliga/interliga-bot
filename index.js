@@ -8,7 +8,7 @@ app.use(express.json());
 const PORT = process.env.PORT || 3000;
 
 // ── MÓDULO DE FRETE (carretas) ──
-const { handleFreteMessage, watchDisparos } = require('./frete-bot-handler');
+const { handleFreteMessage, watchDisparos, iniciarExpiracaoAutomatica } = require('./frete-bot-handler');
 const admin = require('firebase-admin');
 
 let freteDb = null;
@@ -109,6 +109,7 @@ async function startBaileys() {
         // Ativa o monitor de disparos de frete (cargas cadastradas no painel)
         if (freteDb) {
           watchDisparos(sock, freteDb);
+          iniciarExpiracaoAutomatica(freteDb);
           console.log('✅ Monitor de cargas de frete ativado');
         }
       }
